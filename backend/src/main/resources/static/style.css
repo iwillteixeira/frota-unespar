@@ -218,6 +218,7 @@ textarea { resize: vertical; min-height: 84px; }
 .toast.show    { opacity: 1; }
 .toast.sucesso { background: #1a6b3a; }
 .toast.erro    { background: var(--erro); }
+.toast.aviso   { background: #b07000; }
 
 .topbar .menu-icon {
   position: absolute;

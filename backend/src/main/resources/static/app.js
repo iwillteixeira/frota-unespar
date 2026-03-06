@@ -1,5 +1,45 @@
 const API_URL = '/api/diario-bordo';
 
+// ── IndexedDB offline ─────────────────────────────────────────
+function abrirDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('frota-offline', 1);
+    req.onupgradeneeded = e =>
+      e.target.result.createObjectStore('pendentes', { autoIncrement: true });
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+async function salvarOffline(payload) {
+  const db = await abrirDB();
+  return new Promise((resolve, reject) => {
+    const tx  = db.transaction('pendentes', 'readwrite');
+    const req = tx.objectStore('pendentes').add(payload);
+    tx.oncomplete = resolve;
+    req.onerror   = reject;
+  });
+}
+
+async function contarPendentes() {
+  const db = await abrirDB();
+  return new Promise((resolve, reject) => {
+    const req = db.transaction('pendentes').objectStore('pendentes').count();
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+async function tentarEnviarPendentes() {
+  if (!navigator.onLine) return;
+  const n = await contarPendentes();
+  if (n === 0) return;
+  if ('serviceWorker' in navigator && 'SyncManager' in window) {
+    const reg = await navigator.serviceWorker.ready;
+    await reg.sync.register('sync-diario');
+  }
+}
+
 // ── Detecção de ambiente ──────────────────────────────────────
 let deferredPrompt = null;
 const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
@@ -116,21 +156,34 @@ async function enviar() {
     observacoes: document.getElementById('observacoes').value.trim() || undefined,
   };
 
-  try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) throw new Error('Erro no servidor.');
-    showToast('✅ Registro enviado com sucesso!', 'sucesso');
-    limpar();
-  } catch (e) {
-    showToast('❌ ' + e.message, 'erro');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'ENVIAR REGISTRO';
+  let enviado = false;
+  if (navigator.onLine) {
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      enviado = true;
+    } catch (_) {}
   }
+
+  if (enviado) {
+    showToast('✅ Registro enviado com sucesso!', 'sucesso');
+  } else {
+    await salvarOffline(payload);
+    // Tenta Background Sync (Chrome/Android)
+    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+      const reg = await navigator.serviceWorker.ready;
+      await reg.sync.register('sync-diario');
+    }
+    showToast('📶 Sem conexão — será enviado quando você ficar online.', 'aviso');
+  }
+
+  limpar();
+  btn.disabled = false;
+  btn.textContent = 'Enviar registro';
 }
 
 function limpar() {
@@ -152,4 +205,14 @@ function limpar() {
 // ── Service Worker ────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js');
+
+  // Recebe confirmação de envio feito em background pelo SW
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data?.tipo === 'SYNC_OK') {
+      showToast('✅ Registro offline enviado com sucesso!', 'sucesso');
+    }
+  });
 }
+
+// Fallback para Safari/Firefox (sem Background Sync API)
+window.addEventListener('online', tentarEnviarPendentes);
