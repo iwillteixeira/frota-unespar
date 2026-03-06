@@ -3,6 +3,16 @@
 	handle /api/* {
 		reverse_proxy localhost:8080
 	}
+	handle /admin {
+		rewrite * /admin.html
+		root * /home/juscelinot/frota/frontend
+		file_server
+	}
+	handle /admin/callback {
+		rewrite * /admin/callback.html
+		root * /home/juscelinot/frota/frontend
+		file_server
+	}
 	handle {
 		root * /home/juscelinot/frota/frontend
 		file_server

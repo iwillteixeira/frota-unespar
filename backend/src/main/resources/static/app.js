@@ -216,3 +216,16 @@ if ('serviceWorker' in navigator) {
 
 // Fallback para Safari/Firefox (sem Background Sync API)
 window.addEventListener('online', tentarEnviarPendentes);
+
+// ── Carrega veículos da API ───────────────────────────────────
+async function carregarListaVeiculos() {
+  try {
+    const resp = await fetch('/api/veiculos');
+    if (!resp.ok) return;
+    const nomes = await resp.json();
+    const sel = document.getElementById('veiculo');
+    sel.innerHTML = '<option value="">Selecione o veículo...</option>';
+    nomes.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; sel.appendChild(o); });
+  } catch (_) {}
+}
+document.addEventListener('DOMContentLoaded', carregarListaVeiculos);

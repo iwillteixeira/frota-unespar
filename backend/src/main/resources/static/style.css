@@ -285,6 +285,7 @@ textarea { resize: vertical; min-height: 84px; }
   -webkit-tap-highlight-color: transparent;
 }
 .drawer-item:active { background: #d8dde8; }
+a.drawer-item { text-decoration: none; margin-top: 8px; }
 
 /* ── Install btn antigo removido ── */
 .topbar .install-btn { display: none; }

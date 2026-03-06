@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin – Frota UNESPAR</title>
+  <link rel="icon" href="/favicon.ico" />
+  <style>
+    :root {
+      --navy: #1b3a6b;
+      --navy2: #162f58;
+      --green: rgb(45,122,80);
+      --bg: #f0f2f5;
+      --white: #ffffff;
+      --text: #1a1a2e;
+      --muted: #6b7a99;
+      --border: #dde1ec;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* Navbar */
+    .navbar {
+      background: var(--navy);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      height: 56px;
+      position: sticky; top: 0; z-index: 10;
+      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    }
+    .navbar-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1rem; }
+    .navbar-brand img { height: 30px; }
+    .navbar-right { display: flex; align-items: center; gap: 12px; }
+    .user-badge { font-size: .8rem; opacity: .8; }
+    .btn-logout {
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.3);
+      color: #fff;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: .85rem;
+      cursor: pointer;
+    }
+    .btn-logout:hover { background: rgba(255,255,255,.25); }
+
+    /* Login view */
+    #login-view {
+      display: flex; align-items: center; justify-content: center;
+      min-height: calc(100vh - 56px);
+    }
+    .login-card {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 48px 40px;
+      text-align: center;
+      box-shadow: 0 4px 24px rgba(0,0,0,.1);
+      max-width: 380px; width: 90%;
+    }
+    .login-card img { width: 140px; margin-bottom: 24px; }
+    .login-card h2 { font-size: 1.2rem; color: var(--navy); margin-bottom: 6px; }
+    .login-card p { color: var(--muted); font-size: .9rem; margin-bottom: 28px; }
+    .btn-ms {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      background: #0078d4;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: background .2s;
+    }
+    .btn-ms:hover { background: #005fa3; }
+    .btn-ms:disabled { opacity: .6; cursor: not-allowed; }
+    .login-error { color: #c0392b; font-size: .85rem; margin-top: 14px; }
+
+    /* Dashboard */
+    #dashboard-view { }
+
+    /* Stats */
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: var(--white); border-radius: 12px; padding: 20px;
+      text-align: center; box-shadow: 0 1px 6px rgba(0,0,0,.07);
+    }
+    .stat-card .num { font-size: 2rem; font-weight: 700; color: var(--navy); }
+    .stat-card .lbl { font-size: .8rem; color: var(--muted); margin-top: 4px; }
+
+    /* Filters */
+    .filters {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.07);
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 160px; }
+    .filter-group label { font-size: .75rem; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+    .filter-group input, .filter-group select {
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 8px 12px; font-size: .9rem; color: var(--text);
+      background: #f7f8fc;
+    }
+    .btn-filtrar, .btn-limpar {
+      border: none; border-radius: 8px; padding: 9px 20px;
+      font-size: .9rem; font-weight: 600; cursor: pointer;
+      white-space: nowrap; align-self: flex-end;
+    }
+    .btn-filtrar { background: var(--navy); color: #fff; }
+    .btn-filtrar:hover { background: var(--navy2); }
+    .btn-limpar { background: var(--border); color: var(--text); }
+
+    /* Table */
+    .table-wrap {
+      background: var(--white); border-radius: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.07); overflow-x: auto;
+    }
+    .table-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+    }
+    .table-header h3 { font-size: 1rem; color: var(--navy); }
+    .count-badge {
+      background: #e8ecf5; color: var(--navy); border-radius: 20px;
+      padding: 3px 12px; font-size: .8rem; font-weight: 700;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    th { background: #f7f8fc; color: var(--muted); font-weight: 700; font-size: .75rem; text-transform: uppercase; padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; position: sticky; top: 93px; z-index: 1; box-shadow: 0 1px 0 var(--border); }
+    td { padding: 12px 16px; border-bottom: 1px solid #f0f2f5; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f9fafc; }
+
+    .badge {
+      display: inline-block; border-radius: 20px;
+      padding: 3px 10px; font-size: .75rem; font-weight: 700;
+    }
+    .badge-retirada { background: #fff3cd; color: #856404; }
+    .badge-devolucao { background: #d1e7dd; color: #0a5e36; }
+
+    .empty { text-align: center; padding: 48px; color: var(--muted); }
+    .loading { text-align: center; padding: 48px; color: var(--muted); }
+
+    @media (max-width: 600px) {
+      #dashboard-view { padding: 16px; }
+      .login-card { padding: 32px 24px; }
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex; gap: 4px;
+      background: var(--navy2);
+      padding: 0 24px;
+    }
+    .tab-btn {
+      background: none; border: none; color: rgba(255,255,255,.65);
+      font-size: .88rem; font-weight: 600; padding: 10px 18px;
+      cursor: pointer; border-bottom: 3px solid transparent;
+      transition: color .15s, border-color .15s;
+    }
+    .tab-btn:hover { color: #fff; }
+    .tab-btn.active { color: #fff; border-bottom-color: #fff; }
+
+    /* Tab panels */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-brand">
+    <img src="/icons/logo-unespar.png" alt="UNESPAR" />
+    Frota UNESPAR — Admin
+  </div>
+  <div class="navbar-right" id="navbar-right">
+    <a href="/" style="color:#fff;opacity:.7;font-size:.85rem;text-decoration:none;">← Voltar ao app</a>
+  </div>
+</nav>
+
+<!-- Barra de abas (só visível após login) -->
+<div class="tabs" id="tabs-bar" style="display:none">
+  <button class="tab-btn active" onclick="mudarAba('registros')">📋 Registros</button>
+  <button class="tab-btn" onclick="mudarAba('veiculos')">🚗 Veículos</button>
+</div>
+
+<!-- Tela de login -->
+<div id="login-view">
+  <div class="login-card">
+    <img src="/icons/logo-unespar.png" alt="UNESPAR" />
+    <h2>Acesso Administrativo</h2>
+    <p>Diário de Bordo — Frota UNESPAR</p>
+    <button class="btn-ms" id="btn-login" onclick="login()">
+      <svg width="20" height="20" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+        <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+        <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+        <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+      </svg>
+      Entrar com conta Microsoft
+    </button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard-view" style="display:none">
+
+  <!-- Aba: Registros -->
+  <div class="tab-panel active" id="tab-registros">
+    <div style="padding:24px;max-width:1400px;margin:0 auto">
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card"><div class="num" id="stat-total">—</div><div class="lbl">Total de registros</div></div>
+      <div class="stat-card"><div class="num" id="stat-retiradas">—</div><div class="lbl">Retiradas</div></div>
+      <div class="stat-card"><div class="num" id="stat-devolucoes">—</div><div class="lbl">Devoluções</div></div>
+      <div class="stat-card"><div class="num" id="stat-condutores">—</div><div class="lbl">Condutores únicos</div></div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filters">
+      <div class="filter-group">
+        <label>Condutor</label>
+        <input type="text" id="f-condutor" placeholder="Buscar por nome..." />
+      </div>
+      <div class="filter-group">
+        <label>Veículo</label>
+        <select id="f-veiculo">
+          <option value="">Todos</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Tipo</label>
+        <select id="f-tipo">
+          <option value="">Todos</option>
+          <option value="RETIRADA">Retirada</option>
+          <option value="DEVOLUCAO">Devolução</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>De</label>
+        <input type="date" id="f-inicio" />
+      </div>
+      <div class="filter-group">
+        <label>Até</label>
+        <input type="date" id="f-fim" />
+      </div>
+      <button class="btn-filtrar" onclick="buscar()">Filtrar</button>
+      <button class="btn-limpar" onclick="limparFiltros()">Limpar</button>
+    </div>
+
+    <!-- Tabela -->
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>Registros</h3>
+        <div style="display:flex;align-items:center;gap:10px">
+          <label style="font-size:.8rem;color:var(--muted)">Por página:</label>
+          <select id="per-page" onchange="paginaAtual=1;renderPagina()"
+            style="border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:.85rem;background:#f7f8fc">
+            <option value="10">10</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+          </select>
+          <span class="count-badge" id="count-badge">0</span>
+        </div>
+      </div>
+      <div id="table-body">
+        <div class="loading">Carregando...</div>
+      </div>
+      <div id="pagination-bar" style="display:none;align-items:center;justify-content:space-between;
+        padding:12px 20px;border-top:1px solid var(--border);font-size:.85rem;flex-wrap:wrap;gap:8px">
+        <span id="pag-info" style="color:var(--muted)"></span>
+        <div style="display:flex;gap:6px" id="pag-btns"></div>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <!-- Aba: Veículos -->
+  <div class="tab-panel" id="tab-veiculos">
+    <div style="padding:24px;max-width:900px;margin:0 auto">
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>🚗 Gerenciar Veículos</h3>
+      </div>
+      <div style="padding:16px 20px">
+        <div style="display:flex;gap:8px;margin-bottom:16px">
+          <input type="text" id="novo-veiculo" placeholder="Nome do veículo (ex: ONIX ABC-1234)"
+            style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.9rem"
+            onkeydown="if(event.key==='Enter') adicionarVeiculo()" />
+          <button onclick="adicionarVeiculo()" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 18px;cursor:pointer;font-size:.9rem">
+            + Adicionar
+          </button>
+        </div>
+        <div id="erro-veiculo" style="color:#c0392b;font-size:.85rem;margin-bottom:8px;display:none"></div>
+        <div id="lista-veiculos" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+    </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const CLIENT_ID  = '0d704c7a-f95c-4d6c-bf2d-042d8fc0265e';
+const TENANT_ID  = '25578206-8f9a-4e3b-a498-91b736511438';
+const REDIRECT_URI = window.location.origin + '/admin/callback';
+
+// Token salvo pelo callback.html
+let appToken = localStorage.getItem('frota_admin_token');
+let userEmail = localStorage.getItem('frota_admin_email');
+
+function init() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('error')) {
+    document.getElementById('login-error').textContent = decodeURIComponent(params.get('error'));
+    window.history.replaceState({}, '', '/admin');
+  }
+  if (appToken) mostrarDashboard();
+}
+init();
+
+// --- PKCE helpers ---
+function randomBase64url(len) {
+  const arr = new Uint8Array(len);
+  crypto.getRandomValues(arr);
+  return btoa(String.fromCharCode(...arr)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+async function sha256Base64url(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+
+async function login() {
+  document.getElementById('btn-login').disabled = true;
+  document.getElementById('btn-login').textContent = 'Redirecionando...';
+  document.getElementById('login-error').textContent = '';
+
+  const verifier   = randomBase64url(32);
+  const challenge  = await sha256Base64url(verifier);
+  const state      = randomBase64url(16);
+
+  localStorage.setItem('pkce_verifier', verifier);
+  localStorage.setItem('oauth_state',   state);
+
+  const url = 'https://login.microsoftonline.com/' + TENANT_ID + '/oauth2/v2.0/authorize?' +
+    new URLSearchParams({
+      client_id:             CLIENT_ID,
+      response_type:         'code',
+      redirect_uri:          REDIRECT_URI,
+      scope:                 'openid profile email',
+      state:                 state,
+      code_challenge:        challenge,
+      code_challenge_method: 'S256'
+    });
+  window.location.href = url;
+}
+
+function logout() {
+  localStorage.removeItem('frota_admin_token');
+  localStorage.removeItem('frota_admin_email');
+  appToken = null; userEmail = null;
+  document.getElementById('login-view').style.display = 'flex';
+  document.getElementById('dashboard-view').style.display = 'none';
+  document.getElementById('tabs-bar').style.display = 'none';
+  document.getElementById('navbar-right').innerHTML = `<a href="/" style="color:#fff;opacity:.7;font-size:.85rem;text-decoration:none;">← Voltar ao app</a>`;
+}
+
+function mostrarDashboard() {
+  document.getElementById('login-view').style.display = 'none';
+  document.getElementById('dashboard-view').style.display = 'block';
+  document.getElementById('tabs-bar').style.display = 'flex';
+  document.getElementById('navbar-right').innerHTML = `
+    <span class="user-badge">${userEmail}</span>
+    <button class="btn-logout" onclick="logout()">Sair</button>
+  `;
+  carregarVeiculos();
+  buscar();
+}
+
+function mudarAba(aba) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + aba).classList.add('active');
+  document.querySelector(`.tab-btn[onclick="mudarAba('${aba}')"]`).classList.add('active');
+  if (aba === 'veiculos') carregarVeiculos();
+}
+
+async function carregarVeiculos() {
+  try {
+    const resp = await fetch('/api/admin/veiculos', { headers: { Authorization: 'Bearer ' + appToken } });
+    const veiculos = await resp.json();
+
+    // Atualiza select do filtro
+    const sel = document.getElementById('f-veiculo');
+    sel.innerHTML = '<option value="">Todos</option>';
+    veiculos.forEach(v => {
+      const o = document.createElement('option');
+      o.value = v.nome; o.textContent = v.nome + (v.emManutencao ? ' 🔧' : ''); sel.appendChild(o);
+    });
+
+    // Atualiza lista de gerenciamento
+    const lista = document.getElementById('lista-veiculos');
+    lista.innerHTML = veiculos.length === 0
+      ? '<span style="color:var(--muted);font-size:.85rem">Nenhum veículo cadastrado.</span>'
+      : veiculos.map(v => `
+          <div id="veiculo-row-${v.id}" style="display:flex;align-items:center;justify-content:space-between;gap:10px;
+            background:${v.emManutencao ? '#fff8e1' : '#f0f2f5'};
+            border:1px solid ${v.emManutencao ? '#ffe082' : 'var(--border)'};
+            border-radius:10px;padding:10px 14px">
+
+            <!-- modo visualização -->
+            <span id="veiculo-label-${v.id}" style="font-size:.9rem;font-weight:600;color:${v.emManutencao ? '#b45309' : 'var(--text)'};flex:1">
+              ${v.emManutencao ? '🔧 ' : '🚗 '}${esc(v.nome)}
+              ${v.emManutencao ? '<span style="font-size:.75rem;font-weight:400;margin-left:4px">(em manutenção)</span>' : ''}
+            </span>
+
+            <!-- modo edição (oculto) -->
+            <span id="veiculo-edit-${v.id}" style="display:none;flex:1;gap:6px;display:none">
+              <input id="veiculo-input-${v.id}" value="${esc(v.nome)}"
+                style="flex:1;padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:.9rem;width:100%"
+                onkeydown="if(event.key==='Enter') salvarEdicao(${v.id}); if(event.key==='Escape') cancelarEdicao(${v.id})" />
+            </span>
+
+            <span style="display:flex;gap:6px;flex-shrink:0">
+              <!-- botão editar / salvar -->
+              <button id="btn-edit-${v.id}" onclick="iniciarEdicao(${v.id})"
+                style="background:#e3f2fd;color:#1565c0;border:1px solid #90caf9;border-radius:6px;padding:4px 10px;font-size:.78rem;cursor:pointer">
+                ✏️ Editar
+              </button>
+              <button id="btn-save-${v.id}" onclick="salvarEdicao(${v.id})" style="display:none;
+                background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;border-radius:6px;padding:4px 10px;font-size:.78rem;cursor:pointer">
+                💾 Salvar
+              </button>
+              <button id="btn-cancel-${v.id}" onclick="cancelarEdicao(${v.id})" style="display:none;
+                background:#f0f2f5;color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:.78rem;cursor:pointer">
+                ✕
+              </button>
+              <button onclick="toggleManutencao(${v.id})"
+                style="background:${v.emManutencao ? '#fff3cd' : '#e8f5e9'};color:${v.emManutencao ? '#856404' : '#2e7d32'};
+                  border:1px solid ${v.emManutencao ? '#ffe082' : '#a5d6a7'};
+                  border-radius:6px;padding:4px 10px;font-size:.78rem;cursor:pointer;white-space:nowrap">
+                ${v.emManutencao ? '✅ Disponível' : '🔧 Manutenção'}
+              </button>
+              <button onclick="removerVeiculo(${v.id})"
+                style="background:#fdecea;color:#c0392b;border:1px solid #f5c6cb;border-radius:6px;padding:4px 10px;font-size:.78rem;cursor:pointer">
+                🗑
+              </button>
+            </span>
+          </div>`).join('');
+  } catch (_) {}
+}
+
+async function adicionarVeiculo() {
+  const input = document.getElementById('novo-veiculo');
+  const erro  = document.getElementById('erro-veiculo');
+  const nome  = input.value.trim();
+  erro.style.display = 'none';
+  if (!nome) { erro.textContent = 'Digite o nome do veículo.'; erro.style.display = 'block'; return; }
+
+  const resp = await fetch('/api/admin/veiculos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + appToken },
+    body: JSON.stringify({ nome })
+  });
+  const data = await resp.json();
+  if (!resp.ok) { erro.textContent = data.erro || 'Erro ao adicionar.'; erro.style.display = 'block'; return; }
+  input.value = '';
+  carregarVeiculos();
+}
+
+async function removerVeiculo(id) {
+  if (!confirm('Remover este veículo?')) return;
+  const resp = await fetch('/api/admin/veiculos/' + id, {
+    method: 'DELETE',
+    headers: { Authorization: 'Bearer ' + appToken }
+  });
+  if (resp.ok) carregarVeiculos();
+}
+
+function iniciarEdicao(id) {
+  document.getElementById('veiculo-label-' + id).style.display = 'none';
+  document.getElementById('veiculo-edit-'  + id).style.display = 'flex';
+  document.getElementById('btn-edit-'   + id).style.display = 'none';
+  document.getElementById('btn-save-'   + id).style.display = '';
+  document.getElementById('btn-cancel-' + id).style.display = '';
+  const inp = document.getElementById('veiculo-input-' + id);
+  inp.focus(); inp.select();
+}
+
+function cancelarEdicao(id) {
+  document.getElementById('veiculo-label-' + id).style.display = '';
+  document.getElementById('veiculo-edit-'  + id).style.display = 'none';
+  document.getElementById('btn-edit-'   + id).style.display = '';
+  document.getElementById('btn-save-'   + id).style.display = 'none';
+  document.getElementById('btn-cancel-' + id).style.display = 'none';
+}
+
+async function salvarEdicao(id) {
+  const nome = document.getElementById('veiculo-input-' + id).value.trim();
+  if (!nome) return;
+  const resp = await fetch('/api/admin/veiculos/' + id, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + appToken },
+    body: JSON.stringify({ nome })
+  });
+  if (resp.ok) { carregarVeiculos(); }
+  else { const d = await resp.json(); alert(d.erro || 'Erro ao salvar.'); }
+}
+
+async function toggleManutencao(id) {
+  const resp = await fetch('/api/admin/veiculos/' + id + '/manutencao', {
+    method: 'PATCH',
+    headers: { Authorization: 'Bearer ' + appToken }
+  });
+  if (resp.ok) carregarVeiculos();
+}
+
+async function buscar() {
+  const params = new URLSearchParams();
+  const c = document.getElementById('f-condutor').value.trim();
+  const v = document.getElementById('f-veiculo').value;
+  const t = document.getElementById('f-tipo').value;
+  const i = document.getElementById('f-inicio').value;
+  const f = document.getElementById('f-fim').value;
+  if (c) params.set('condutor', c);
+  if (v) params.set('veiculo', v);
+  if (t) params.set('tipo', t);
+  if (i) params.set('inicio', i);
+  if (f) params.set('fim', f);
+
+  document.getElementById('table-body').innerHTML = '<div class="loading">Carregando...</div>';
+  try {
+    const resp = await fetch('/api/admin/registros?' + params, { headers: { Authorization: 'Bearer ' + appToken } });
+    if (resp.status === 401) { logout(); return; }
+    const data = await resp.json();
+    renderTabela(data);
+  } catch (e) {
+    document.getElementById('table-body').innerHTML = '<div class="empty">Erro ao carregar registros.</div>';
+  }
+}
+
+function limparFiltros() {
+  ['f-condutor','f-veiculo','f-tipo','f-inicio','f-fim'].forEach(id => {
+    const el = document.getElementById(id);
+    el.tagName === 'SELECT' ? el.selectedIndex = 0 : el.value = '';
+  });
+  buscar();
+}
+
+let todosRegistros = [];
+let paginaAtual = 1;
+
+function renderTabela(registros) {
+  todosRegistros = registros;
+  paginaAtual = 1;
+
+  const retiradas  = registros.filter(r => r.tipoMovimentacao === 'RETIRADA').length;
+  const devolucoes = registros.filter(r => r.tipoMovimentacao === 'DEVOLUCAO').length;
+  const condutores = new Set(registros.map(r => r.nomeCondutor)).size;
+  document.getElementById('stat-total').textContent      = registros.length;
+  document.getElementById('stat-retiradas').textContent  = retiradas;
+  document.getElementById('stat-devolucoes').textContent = devolucoes;
+  document.getElementById('stat-condutores').textContent = condutores;
+  document.getElementById('count-badge').textContent     = registros.length + ' registro(s)';
+
+  if (registros.length === 0) {
+    document.getElementById('table-body').innerHTML = '<div class="empty">Nenhum registro encontrado.</div>';
+    document.getElementById('pagination-bar').style.display = 'none';
+    return;
+  }
+  renderPagina();
+}
+
+function renderPagina() {
+  const perPage = parseInt(document.getElementById('per-page').value);
+  const total   = todosRegistros.length;
+  const pages   = Math.ceil(total / perPage);
+  paginaAtual   = Math.min(paginaAtual, pages);
+  const inicio  = (paginaAtual - 1) * perPage;
+  const slice   = todosRegistros.slice(inicio, inicio + perPage);
+
+  const fmt = dt => {
+    const d = new Date(dt);
+    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+  };
+
+  const rows = slice.map(r => `
+    <tr>
+      <td style="white-space:nowrap">${fmt(r.dataHora)}</td>
+      <td><span class="badge ${r.tipoMovimentacao === 'RETIRADA' ? 'badge-retirada' : 'badge-devolucao'}">
+        ${r.tipoMovimentacao === 'RETIRADA' ? 'Retirada' : 'Devolução'}
+      </span></td>
+      <td>${esc(r.nomeCondutor)}</td>
+      <td>${esc(r.veiculo)}</td>
+      <td>${r.kmAtual?.toLocaleString('pt-BR')} km</td>
+      <td>${esc(r.destino)}</td>
+      <td>${esc(r.volumeTanque)}</td>
+      <td>${r.temPassageiros ? (r.nomePassageiros ? esc(r.nomePassageiros) : 'Sim') : 'Não'}</td>
+      <td style="max-width:200px;white-space:pre-wrap">${r.observacoes ? esc(r.observacoes) : '—'}</td>
+    </tr>`).join('');
+
+  document.getElementById('table-body').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Data/Hora</th><th>Tipo</th><th>Condutor</th><th>Veículo</th>
+        <th>KM</th><th>Destino</th><th>Tanque</th><th>Passageiros</th><th>Obs.</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+
+  // Barra de paginação
+  const bar = document.getElementById('pagination-bar');
+  if (pages <= 1) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  document.getElementById('pag-info').textContent =
+    `Mostrando ${inicio + 1}–${Math.min(inicio + perPage, total)} de ${total}`;
+
+  const btnStyle = (ativo) =>
+    `border:1px solid var(--border);border-radius:6px;padding:5px 11px;font-size:.82rem;cursor:pointer;` +
+    (ativo ? 'background:var(--navy);color:#fff;font-weight:700;' : 'background:#f7f8fc;color:var(--text);');
+
+  // Mostra no máximo 7 botões de página
+  let pagBtns = '';
+  const range = (s, e) => { for (let i=s;i<=e;i++) pagBtns += `<button style="${btnStyle(i===paginaAtual)}" onclick="irPagina(${i})">${i}</button>`; };
+  pagBtns += `<button style="${btnStyle(false)}" onclick="irPagina(${paginaAtual-1})" ${paginaAtual===1?'disabled':''}>‹</button>`;
+  if (pages <= 7) { range(1, pages); }
+  else if (paginaAtual <= 4) { range(1, 5); pagBtns += `<span style="padding:5px 4px">…</span>`; range(pages, pages); }
+  else if (paginaAtual >= pages - 3) { range(1, 1); pagBtns += `<span style="padding:5px 4px">…</span>`; range(pages-4, pages); }
+  else { range(1,1); pagBtns += `<span style="padding:5px 4px">…</span>`; range(paginaAtual-1, paginaAtual+1); pagBtns += `<span style="padding:5px 4px">…</span>`; range(pages, pages); }
+  pagBtns += `<button style="${btnStyle(false)}" onclick="irPagina(${paginaAtual+1})" ${paginaAtual===pages?'disabled':''}>›</button>`;
+  document.getElementById('pag-btns').innerHTML = pagBtns;
+}
+
+function irPagina(p) {
+  const pages = Math.ceil(todosRegistros.length / parseInt(document.getElementById('per-page').value));
+  if (p < 1 || p > pages) return;
+  paginaAtual = p;
+  renderPagina();
+  document.getElementById('tab-registros').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function esc(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+init();
+</script>
+</body>
+</html>

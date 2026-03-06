@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Autenticando – Frota UNESPAR</title>
+</head>
+<body style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#666;flex-direction:column;gap:12px">
+  <div id="status">⏳ Autenticando, aguarde...</div>
+  <script>
+    const CLIENT_ID = '0d704c7a-f95c-4d6c-bf2d-042d8fc0265e';
+    const TENANT_ID = '25578206-8f9a-4e3b-a498-91b736511438';
+    const REDIRECT_URI = window.location.origin + '/admin/callback';
+
+    function setStatus(msg) {
+      console.log('[callback]', msg);
+      document.getElementById('status').textContent = msg;
+    }
+
+    async function handleCallback() {
+      const params = new URLSearchParams(window.location.search);
+      const code  = params.get('code');
+      const state = params.get('state');
+      const error = params.get('error');
+
+      if (error) {
+        window.location.replace('/admin?error=' + encodeURIComponent(params.get('error_description') || error));
+        return;
+      }
+
+      if (!code) {
+        setStatus('Sem código, voltando...');
+        setTimeout(() => window.location.replace('/admin'), 1500);
+        return;
+      }
+
+      // Valida state
+      const storedState = localStorage.getItem('oauth_state');
+      if (state !== storedState) {
+        window.location.replace('/admin?error=' + encodeURIComponent('State inválido. Tente novamente.'));
+        return;
+      }
+
+      const verifier = localStorage.getItem('pkce_verifier');
+      setStatus('Trocando código por token...');
+
+      // Troca o código pelo id_token no endpoint da Microsoft
+      const tokenResp = await fetch(
+        'https://login.microsoftonline.com/' + TENANT_ID + '/oauth2/v2.0/token',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id:     CLIENT_ID,
+            grant_type:    'authorization_code',
+            code:          code,
+            redirect_uri:  REDIRECT_URI,
+            code_verifier: verifier
+          })
+        }
+      );
+      const tokens = await tokenResp.json();
+      console.log('[callback] token response:', tokenResp.status, tokens.token_type || tokens.error);
+
+      if (!tokenResp.ok) {
+        window.location.replace('/admin?error=' + encodeURIComponent(tokens.error_description || tokens.error || 'Falha ao obter token'));
+        return;
+      }
+
+      setStatus('Validando no servidor...');
+      const resp = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: tokens.id_token })
+      });
+      const data = await resp.json();
+      console.log('[callback] backend:', resp.status, data);
+
+      if (resp.ok) {
+        localStorage.setItem('frota_admin_token', data.token);
+        localStorage.setItem('frota_admin_email', data.email);
+        // Limpa dados temporários
+        localStorage.removeItem('pkce_verifier');
+        localStorage.removeItem('oauth_state');
+        setStatus('✅ Login OK!');
+        window.location.replace('/admin');
+      } else {
+        window.location.replace('/admin?error=' + encodeURIComponent(data.erro || 'Acesso negado'));
+      }
+    }
+
+    handleCallback().catch(e => {
+      console.error('[callback] erro:', e);
+      window.location.replace('/admin?error=' + encodeURIComponent(e.message || 'Erro inesperado'));
+    });
+  </script>
+</body>
+</html>

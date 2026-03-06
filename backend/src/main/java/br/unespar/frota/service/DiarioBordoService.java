@@ -1,6 +1,8 @@
 package br.unespar.frota.service;
 
 import br.unespar.frota.dto.DiarioBordoDTO;
+import br.unespar.frota.entity.DiarioBordoRecord;
+import br.unespar.frota.repository.DiarioBordoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
@@ -15,6 +17,7 @@ import java.time.format.DateTimeFormatter;
 public class DiarioBordoService {
 
     private final JavaMailSender mailSender;
+    private final DiarioBordoRepository repository;
 
     @Value("${frota.email.destino}")
     private String emailDestino;
@@ -23,11 +26,29 @@ public class DiarioBordoService {
     private String emailUsername;
 
     public void registrar(DiarioBordoDTO dto) {
+        LocalDateTime agora = LocalDateTime.now();
+
+        // Salva no banco
+        DiarioBordoRecord record = new DiarioBordoRecord();
+        record.setDataHora(agora);
+        record.setTipoMovimentacao(dto.getTipoMovimentacao().name());
+        record.setNomeCondutor(dto.getNomeCondutor());
+        record.setKmAtual(dto.getKmAtual());
+        record.setVeiculo(dto.getVeiculo());
+        record.setDestino(dto.getDestino());
+        record.setTemPassageiros(dto.getTemPassageiros());
+        record.setNomePassageiros(dto.getNomePassageiros());
+        record.setVolumeTanque(dto.getVolumeTanque());
+        record.setObservacoes(dto.getObservacoes());
+        record.setCienteInstrucoes(dto.getCienteInstrucoes());
+        repository.save(record);
+
+        // Envia por e-mail
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(emailUsername);
         message.setTo(emailDestino);
         message.setSubject(buildSubject(dto));
-        message.setText(buildBody(dto));
+        message.setText(buildBody(dto, agora));
         mailSender.send(message);
     }
 
@@ -37,14 +58,14 @@ public class DiarioBordoService {
         return "[FROTA UNESPAR] " + tipo + " - " + dto.getVeiculo() + " - " + dto.getNomeCondutor();
     }
 
-    private String buildBody(DiarioBordoDTO dto) {
+    private String buildBody(DiarioBordoDTO dto, LocalDateTime dataHora) {
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
         String tipo = dto.getTipoMovimentacao() == DiarioBordoDTO.TipoMovimentacao.RETIRADA
                 ? "RETIRADA / SAÍDA" : "DEVOLUÇÃO / CHEGADA";
 
         StringBuilder sb = new StringBuilder();
         sb.append("=== DIÁRIO DE BORDO - UNESPAR ===\n\n");
-        sb.append("Data/Hora: ").append(LocalDateTime.now().format(fmt)).append("\n");
+        sb.append("Data/Hora: ").append(dataHora.format(fmt)).append("\n");
         sb.append("Tipo: ").append(tipo).append("\n\n");
         sb.append("Condutor: ").append(dto.getNomeCondutor()).append("\n");
         sb.append("Veículo/Placa: ").append(dto.getVeiculo()).append("\n");
@@ -67,3 +88,4 @@ public class DiarioBordoService {
         return sb.toString();
     }
 }
+
