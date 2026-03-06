@@ -146,9 +146,57 @@
     .empty { text-align: center; padding: 48px; color: var(--muted); }
     .loading { text-align: center; padding: 48px; color: var(--muted); }
 
-    @media (max-width: 600px) {
-      #dashboard-view { padding: 16px; }
-      .login-card { padding: 32px 24px; }
+    @media (max-width: 768px) {
+      /* Navbar */
+      .navbar { padding: 0 16px; }
+      .navbar-brand span { display: none; }
+
+      /* Tabs: horizontal scroll sem barra */
+      .tabs { padding: 0 8px; overflow-x: auto; scrollbar-width: none; }
+      .tabs::-webkit-scrollbar { display: none; }
+      .tab-btn { padding: 10px 12px; font-size: .8rem; white-space: nowrap; }
+
+      /* Tab panel inner padding */
+      #tab-registros > div, #tab-veiculos > div, #tab-usuarios > div { padding: 12px; }
+
+      /* Stats */
+      .stats-row { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+      .stat-card { padding: 12px 8px; }
+      .stat-card .num { font-size: 1.4rem; }
+
+      /* Filtros */
+      .filters { padding: 12px; gap: 8px; }
+      .filter-group { min-width: calc(50% - 4px); flex: unset; width: calc(50% - 4px); }
+      .btn-filtrar, .btn-limpar { flex: 1; align-self: auto; padding: 9px 12px; }
+
+      /* Table header */
+      .table-header { flex-wrap: wrap; gap: 6px; padding: 12px 16px; }
+      .table-header h3 { font-size: .9rem; }
+
+      /* Tabela: vira cards no mobile */
+      table thead { display: none; }
+      table tr { display: block; border-bottom: 2px solid #e8ecf5; padding: 12px 16px; }
+      table tr:hover td { background: none; }
+      table td {
+        display: flex; justify-content: space-between; align-items: flex-start;
+        padding: 4px 0; border: none; font-size: .85rem; gap: 10px;
+      }
+      table td[data-label]::before {
+        content: attr(data-label);
+        font-weight: 700; color: var(--muted); font-size: .7rem;
+        text-transform: uppercase; min-width: 90px; flex-shrink: 0; padding-top: 2px;
+      }
+
+      /* Linhas de input+botão empilham */
+      .input-row { flex-wrap: wrap !important; }
+      .input-row input, .input-row input[type="email"] { width: 100%; box-sizing: border-box; }
+      .input-row button { flex: 1; }
+
+      /* Paginação */
+      #pagination-bar { padding: 10px 16px; }
+      #pag-btns { flex-wrap: wrap; justify-content: center; }
+
+      .login-card { padding: 32px 20px; }
     }
 
     /* Tabs */
@@ -291,7 +339,7 @@
         <h3>🚗 Gerenciar Veículos</h3>
       </div>
       <div style="padding:16px 20px">
-        <div style="display:flex;gap:8px;margin-bottom:16px">
+        <div class="input-row" style="display:flex;gap:8px;margin-bottom:16px">
           <input type="text" id="novo-veiculo" placeholder="Nome do veículo (ex: ONIX ABC-1234)"
             style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.9rem"
             onkeydown="if(event.key==='Enter') adicionarVeiculo()" />
@@ -316,7 +364,7 @@
         <h3>👥 Administradores</h3>
       </div>
       <div style="padding:16px 20px">
-        <div style="display:flex;gap:8px;margin-bottom:16px">
+        <div class="input-row" style="display:flex;gap:8px;margin-bottom:16px">
           <input type="email" id="novo-admin-email" placeholder="e-mail do novo administrador"
             style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.9rem"
             onkeydown="if(event.key==='Enter') adicionarAdmin()" />
@@ -339,7 +387,7 @@
           E-mail que receberá uma cópia de cada registro do diário de bordo.
           As credenciais do servidor de envio são configuradas pelo administrador do sistema.
         </p>
-        <div style="display:flex;gap:8px;align-items:center">
+        <div class="input-row" style="display:flex;gap:8px;align-items:center">
           <input type="email" id="email-notificacao" placeholder="destinatário@dominio.com"
             style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.9rem" />
           <button onclick="salvarEmailNotificacao()" style="background:var(--navy2);color:#fff;border:none;border-radius:8px;padding:8px 18px;cursor:pointer;font-size:.9rem">
@@ -735,17 +783,17 @@ function renderPagina() {
 
   const rows = slice.map(r => `
     <tr>
-      <td style="white-space:nowrap">${fmt(r.dataHora)}</td>
-      <td><span class="badge ${r.tipoMovimentacao === 'RETIRADA' ? 'badge-retirada' : 'badge-devolucao'}">
+      <td data-label="Data/Hora" style="white-space:nowrap">${fmt(r.dataHora)}</td>
+      <td data-label="Tipo"><span class="badge ${r.tipoMovimentacao === 'RETIRADA' ? 'badge-retirada' : 'badge-devolucao'}">
         ${r.tipoMovimentacao === 'RETIRADA' ? 'Retirada' : 'Devolução'}
       </span></td>
-      <td>${esc(r.nomeCondutor)}</td>
-      <td>${esc(r.veiculo)}</td>
-      <td>${r.kmAtual?.toLocaleString('pt-BR')} km</td>
-      <td>${esc(r.destino)}</td>
-      <td>${esc(r.volumeTanque)}</td>
-      <td>${r.temPassageiros ? (r.nomePassageiros ? esc(r.nomePassageiros) : 'Sim') : 'Não'}</td>
-      <td style="max-width:200px;white-space:pre-wrap">${r.observacoes ? esc(r.observacoes) : '—'}</td>
+      <td data-label="Condutor">${esc(r.nomeCondutor)}</td>
+      <td data-label="Veículo">${esc(r.veiculo)}</td>
+      <td data-label="KM">${r.kmAtual?.toLocaleString('pt-BR')} km</td>
+      <td data-label="Destino">${esc(r.destino)}</td>
+      <td data-label="Tanque">${esc(r.volumeTanque)}</td>
+      <td data-label="Passageiros">${r.temPassageiros ? (r.nomePassageiros ? esc(r.nomePassageiros) : 'Sim') : 'Não'}</td>
+      <td data-label="Obs." style="max-width:200px;white-space:pre-wrap">${r.observacoes ? esc(r.observacoes) : '—'}</td>
     </tr>`).join('');
 
   document.getElementById('table-body').innerHTML = `
