@@ -1,0 +1,5 @@
+backend/target/
+certs/
+caddy-ca/
+.git/
+*.md

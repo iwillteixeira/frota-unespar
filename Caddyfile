@@ -1,0 +1,10 @@
+# Dev local sem Docker
+:80 {
+	handle /api/* {
+		reverse_proxy localhost:8080
+	}
+	handle {
+		root * /home/juscelinot/frota/frontend
+		file_server
+	}
+}

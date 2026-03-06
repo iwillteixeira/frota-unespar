@@ -1,0 +1,320 @@
+:root {
+  --navy:   #1b3a6b;
+  --navy2:  #162f58;
+  --navy3:  #0f2040;
+  --input-bg: #eef0f4;
+  --label:  #6b7a99;
+  --erro:   #c0392b;
+  --text:   #1a1a2e;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--navy);
+}
+
+/* ── Top bar ── */
+.topbar {
+  background: var(--navy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(env(safe-area-inset-top) + 14px) 16px 14px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.topbar .menu-icon {
+  position: absolute;
+  left: 16px;
+  font-size: 1.3rem;
+  color: white;
+  cursor: pointer;
+  line-height: 1;
+}
+.topbar h1 {
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: .3px;
+}
+
+/* ── Aviso faixa ── */
+.aviso-bar {
+  background: #f0c040;
+  color: #1a1a1a;
+  font-size: .68rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 6px 12px;
+  line-height: 1.5;
+}
+
+/* ── Sheet branca ── */
+.sheet {
+  background: #fff;
+  border-radius: 22px 22px 0 0;
+  min-height: calc(100vh - 110px);
+  padding: 24px 20px calc(100px + env(safe-area-inset-bottom));
+}
+
+/* ── Campos ── */
+.campo { margin-bottom: 20px; }
+
+label.campo-label {
+  display: block;
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--label);
+  margin-bottom: 6px;
+  letter-spacing: .2px;
+}
+label.campo-label .obrig { color: var(--erro); }
+
+/* Inputs */
+input[type=text],
+input[type=number],
+select,
+textarea {
+  width: 100%;
+  background: var(--input-bg);
+  border: none;
+  border-radius: 10px;
+  padding: 13px 14px;
+  font-size: .95rem;
+  color: var(--text);
+  outline: none;
+  transition: box-shadow .15s;
+  -webkit-appearance: none;
+  font-family: inherit;
+}
+input:focus, select:focus, textarea:focus {
+  box-shadow: 0 0 0 2px var(--navy);
+}
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M6 8L0 0h12z' fill='%236b7a99'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-color: var(--input-bg);
+  padding-right: 36px;
+  cursor: pointer;
+}
+textarea { resize: vertical; min-height: 84px; }
+
+/* ── Opções (radio-like) ── */
+.opcoes { display: flex; flex-direction: column; gap: 8px; }
+.opcao {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--input-bg);
+  border: none;
+  border-radius: 10px;
+  padding: 13px 14px;
+  cursor: pointer;
+  transition: background .15s, box-shadow .15s;
+  font-size: .9rem;
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.opcao:active { transform: scale(.985); }
+.opcao.selecionada {
+  background: var(--navy);
+  color: white;
+}
+.bolinha {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 2px solid #b0bdd4;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color .15s;
+}
+.opcao.selecionada .bolinha {
+  border-color: rgba(255,255,255,.6);
+}
+.opcao.selecionada .bolinha::after {
+  content: '';
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: white;
+}
+
+/* ── Seção separadora ── */
+.secao-titulo {
+  font-size: .7rem;
+  font-weight: 700;
+  color: var(--navy);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 24px 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--input-bg);
+}
+
+/* ── Botão fixo no rodapé ── */
+.rodape-fixo {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: white;
+  padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+  box-shadow: 0 -4px 16px rgba(27,58,107,.12);
+  z-index: 30;
+}
+.btn-enviar {
+  width: 100%;
+  background: var(--navy);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 16px;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: .5px;
+  cursor: pointer;
+  transition: background .15s, transform .1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-enviar:active  { transform: scale(.98); background: var(--navy2); }
+.btn-enviar:disabled { background: #8fa0bb; cursor: not-allowed; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: calc(80px + env(safe-area-inset-bottom));
+  left: 50%; transform: translateX(-50%);
+  background: var(--navy3);
+  color: white;
+  padding: 11px 22px;
+  border-radius: 22px;
+  font-size: .85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  z-index: 999;
+  opacity: 0;
+  transition: opacity .3s;
+  pointer-events: none;
+  max-width: 90vw;
+  text-align: center;
+  white-space: normal;
+}
+.toast.show    { opacity: 1; }
+.toast.sucesso { background: #1a6b3a; }
+.toast.erro    { background: var(--erro); }
+
+.topbar .menu-icon {
+  position: absolute;
+  left: 16px;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.4rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Drawer lateral ── */
+.drawer-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 40;
+}
+.drawer {
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: 280px;
+  background: white;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 4px 0 24px rgba(0,0,0,.2);
+  transform: translateX(0);
+}
+.drawer-header {
+  background: var(--navy);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(env(safe-area-inset-top) + 16px) 16px 16px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+.drawer-fechar {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+.drawer-body { padding: 16px; }
+.drawer-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  background: var(--input-bg);
+  border: none;
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: .95rem;
+  color: var(--navy);
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.drawer-item:active { background: #d8dde8; }
+
+/* ── Install btn antigo removido ── */
+.topbar .install-btn { display: none; }
+
+/* ── Modal iOS ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 100;
+  display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.modal-box {
+  background: white;
+  border-radius: 20px 20px 0 0;
+  padding: 28px 24px 32px;
+  width: 100%;
+  max-width: 480px;
+  text-align: center;
+}
+.modal-titulo {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 16px;
+}
+.modal-corpo p { font-size: .9rem; color: #444; line-height: 1.6; margin-bottom: 8px; }
+.modal-icone-ios {
+  font-size: 2.2rem;
+  margin: 10px 0;
+  color: #007aff;
+}
+.modal-fechar {
+  margin-top: 20px;
+  width: 100%;
+  background: var(--navy);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: .95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+
+.hidden { display: none !important; }
