@@ -2,6 +2,7 @@ package br.unespar.frota.service;
 
 import br.unespar.frota.dto.DiarioBordoDTO;
 import br.unespar.frota.entity.DiarioBordoRecord;
+import br.unespar.frota.repository.ConfiguracaoRepository;
 import br.unespar.frota.repository.DiarioBordoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,12 +20,20 @@ public class DiarioBordoService {
 
     private final JavaMailSender mailSender;
     private final DiarioBordoRepository repository;
+    private final ConfiguracaoRepository configuracaoRepository;
 
     @Value("${frota.email.destino}")
-    private String emailDestino;
+    private String emailDestinoDefault;
 
     @Value("${spring.mail.username}")
     private String emailUsername;
+
+    private String resolverEmailDestino() {
+        return configuracaoRepository.findById("email.notificacao")
+                .map(c -> c.getValor())
+                .filter(v -> !v.isBlank())
+                .orElse(emailDestinoDefault);
+    }
 
     public void registrar(DiarioBordoDTO dto) {
         LocalDateTime agora = LocalDateTime.now(ZoneId.of("America/Sao_Paulo"));
@@ -47,7 +56,7 @@ public class DiarioBordoService {
         // Envia por e-mail
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(emailUsername);
-        message.setTo(emailDestino);
+        message.setTo(resolverEmailDestino());
         message.setSubject(buildSubject(dto));
         message.setText(buildBody(dto, agora));
         mailSender.send(message);

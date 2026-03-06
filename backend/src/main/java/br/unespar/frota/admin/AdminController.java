@@ -1,9 +1,11 @@
 package br.unespar.frota.admin;
 
 import br.unespar.frota.entity.AdminUser;
+import br.unespar.frota.entity.Configuracao;
 import br.unespar.frota.entity.DiarioBordoRecord;
 import br.unespar.frota.entity.Veiculo;
 import br.unespar.frota.repository.AdminUserRepository;
+import br.unespar.frota.repository.ConfiguracaoRepository;
 import br.unespar.frota.repository.DiarioBordoRepository;
 import br.unespar.frota.repository.VeiculoRepository;
 import br.unespar.frota.security.JwtService;
@@ -29,6 +31,10 @@ public class AdminController {
     private final DiarioBordoRepository repository;
     private final VeiculoRepository veiculoRepository;
     private final AdminUserRepository adminUserRepository;
+    private final ConfiguracaoRepository configuracaoRepository;
+
+    @Value("${frota.email.destino}")
+    private String emailDestinoDefault;
 
     @Value("${frota.admin.email}")
     private String adminEmail;
@@ -144,5 +150,27 @@ public class AdminController {
         if (!adminUserRepository.existsById(id)) return ResponseEntity.notFound().build();
         adminUserRepository.deleteById(id);
         return ResponseEntity.ok(Map.of("ok", true));
+    }
+
+    // ── Configurações ──────────────────────────────────────────────────────────
+
+    @GetMapping("/config/notificacao")
+    public ResponseEntity<?> getEmailNotificacao() {
+        String email = configuracaoRepository.findById("email.notificacao")
+                .map(c -> c.getValor())
+                .filter(v -> !v.isBlank())
+                .orElse(emailDestinoDefault);
+        return ResponseEntity.ok(Map.of("email", email));
+    }
+
+    @PutMapping("/config/notificacao")
+    public ResponseEntity<?> setEmailNotificacao(@RequestBody Map<String, String> body) {
+        String email = body.getOrDefault("email", "").trim();
+        if (email.isBlank()) return ResponseEntity.badRequest().body(Map.of("erro", "E-mail obrigatório"));
+        Configuracao c = configuracaoRepository.findById("email.notificacao").orElse(new Configuracao());
+        c.setChave("email.notificacao");
+        c.setValor(email);
+        configuracaoRepository.save(c);
+        return ResponseEntity.ok(Map.of("ok", true, "email", email));
     }
 }
