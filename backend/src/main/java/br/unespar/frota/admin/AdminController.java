@@ -1,7 +1,9 @@
 package br.unespar.frota.admin;
 
+import br.unespar.frota.entity.AdminUser;
 import br.unespar.frota.entity.DiarioBordoRecord;
 import br.unespar.frota.entity.Veiculo;
+import br.unespar.frota.repository.AdminUserRepository;
 import br.unespar.frota.repository.DiarioBordoRepository;
 import br.unespar.frota.repository.VeiculoRepository;
 import br.unespar.frota.security.JwtService;
@@ -26,6 +28,7 @@ public class AdminController {
     private final JwtService jwtService;
     private final DiarioBordoRepository repository;
     private final VeiculoRepository veiculoRepository;
+    private final AdminUserRepository adminUserRepository;
 
     @Value("${frota.admin.email}")
     private String adminEmail;
@@ -41,7 +44,8 @@ public class AdminController {
         }
         try {
             String email = microsoftTokenService.validarEObterEmail(idToken);
-            if (!adminEmail.equalsIgnoreCase(email) && !adminEmail2.equalsIgnoreCase(email)) {
+            if (!adminEmail.equalsIgnoreCase(email) && !adminEmail2.equalsIgnoreCase(email)
+                    && !adminUserRepository.existsByEmailIgnoreCase(email)) {
                 return ResponseEntity.status(403).body(Map.of("erro", "Acesso não autorizado para " + email));
             }
             String token = jwtService.gerarToken(email);
@@ -114,5 +118,31 @@ public class AdminController {
             v.setNome(nome);
             return ResponseEntity.ok((Object) veiculoRepository.save(v));
         }).orElse(ResponseEntity.notFound().build());
+    }
+
+    // ── Usuários Admin ──────────────────────────────────────────────────────────
+
+    @GetMapping("/usuarios")
+    public ResponseEntity<List<AdminUser>> listarUsuarios() {
+        return ResponseEntity.ok(adminUserRepository.findAll()
+                .stream().sorted((a, b) -> a.getEmail().compareToIgnoreCase(b.getEmail())).toList());
+    }
+
+    @PostMapping("/usuarios")
+    public ResponseEntity<?> addUsuario(@RequestBody Map<String, String> body) {
+        String email = body.getOrDefault("email", "").trim().toLowerCase();
+        if (email.isBlank()) return ResponseEntity.badRequest().body(Map.of("erro", "E-mail obrigatório"));
+        if (adminUserRepository.existsByEmailIgnoreCase(email))
+            return ResponseEntity.badRequest().body(Map.of("erro", "E-mail já cadastrado"));
+        AdminUser u = new AdminUser();
+        u.setEmail(email);
+        return ResponseEntity.ok(adminUserRepository.save(u));
+    }
+
+    @DeleteMapping("/usuarios/{id}")
+    public ResponseEntity<?> removeUsuario(@PathVariable Long id) {
+        if (!adminUserRepository.existsById(id)) return ResponseEntity.notFound().build();
+        adminUserRepository.deleteById(id);
+        return ResponseEntity.ok(Map.of("ok", true));
     }
 }

@@ -188,6 +188,7 @@
 <div class="tabs" id="tabs-bar" style="display:none">
   <button class="tab-btn active" onclick="mudarAba('registros')">📋 Registros</button>
   <button class="tab-btn" onclick="mudarAba('veiculos')">🚗 Veículos</button>
+  <button class="tab-btn" onclick="mudarAba('usuarios')">👥 Usuários</button>
 </div>
 
 <!-- Tela de login -->
@@ -305,6 +306,29 @@
     </div>
   </div>
 
+  <!-- Aba: Usuários -->
+  <div class="tab-panel" id="tab-usuarios">
+    <div style="padding:24px;max-width:900px;margin:0 auto">
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>👥 Administradores</h3>
+      </div>
+      <div style="padding:16px 20px">
+        <div style="display:flex;gap:8px;margin-bottom:16px">
+          <input type="email" id="novo-admin-email" placeholder="e-mail do novo administrador"
+            style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.9rem"
+            onkeydown="if(event.key==='Enter') adicionarAdmin()" />
+          <button onclick="adicionarAdmin()" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 18px;cursor:pointer;font-size:.9rem">
+            + Adicionar
+          </button>
+        </div>
+        <div id="erro-admin" style="color:#c0392b;font-size:.85rem;margin-bottom:8px;display:none"></div>
+        <div id="lista-admins" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+    </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -390,6 +414,7 @@ function mudarAba(aba) {
   document.getElementById('tab-' + aba).classList.add('active');
   document.querySelector(`.tab-btn[onclick="mudarAba('${aba}')"]`).classList.add('active');
   if (aba === 'veiculos') carregarVeiculos();
+  if (aba === 'usuarios') carregarAdmins();
 }
 
 async function carregarVeiculos() {
@@ -520,6 +545,47 @@ async function toggleManutencao(id) {
     headers: { Authorization: 'Bearer ' + appToken }
   });
   if (resp.ok) carregarVeiculos();
+}
+
+// ── Usuários Admin ──────────────────────────────────────────────────────────
+async function carregarAdmins() {
+  const resp = await fetch('/api/admin/usuarios', { headers: { Authorization: 'Bearer ' + appToken } });
+  const lista = await resp.json();
+  const el = document.getElementById('lista-admins');
+  if (!lista.length) { el.innerHTML = '<p style="color:var(--muted);font-size:.9rem">Nenhum administrador adicional cadastrado.</p>'; return; }
+  el.innerHTML = lista.map(u => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f9fafc;border-radius:8px;border:1px solid var(--border)">
+      <span style="font-size:.9rem">📧 ${u.email}</span>
+      <button onclick="removerAdmin(${u.id})" style="background:#e74c3c;color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:.82rem">
+        🗑 Remover
+      </button>
+    </div>`).join('');
+}
+
+async function adicionarAdmin() {
+  const input = document.getElementById('novo-admin-email');
+  const erroEl = document.getElementById('erro-admin');
+  const email = input.value.trim();
+  erroEl.style.display = 'none';
+  if (!email) return;
+  const resp = await fetch('/api/admin/usuarios', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + appToken },
+    body: JSON.stringify({ email })
+  });
+  const data = await resp.json();
+  if (!resp.ok) { erroEl.textContent = data.erro || 'Erro ao adicionar'; erroEl.style.display = 'block'; return; }
+  input.value = '';
+  carregarAdmins();
+}
+
+async function removerAdmin(id) {
+  if (!confirm('Remover este administrador?')) return;
+  const resp = await fetch('/api/admin/usuarios/' + id, {
+    method: 'DELETE',
+    headers: { Authorization: 'Bearer ' + appToken }
+  });
+  if (resp.ok) carregarAdmins();
 }
 
 async function buscar() {
