@@ -1,0 +1,16 @@
+# Artefatos de build
+backend/target/
+
+# Certificados e chaves privadas
+certs/
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Variáveis de ambiente
+.env
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
