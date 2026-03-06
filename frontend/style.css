@@ -85,6 +85,7 @@ label.campo-label {
   letter-spacing: .2px;
 }
 label.campo-label .obrig { color: var(--erro); }
+label.campo-label a { color: var(--navy); font-weight: 600; text-decoration: underline; }
 
 /* Inputs */
 input[type=text],
