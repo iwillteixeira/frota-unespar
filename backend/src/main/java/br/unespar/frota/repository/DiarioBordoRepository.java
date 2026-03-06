@@ -16,8 +16,7 @@ public interface DiarioBordoRepository extends JpaRepository<DiarioBordoRecord, 
            "(:condutor IS NULL OR LOWER(r.nomeCondutor) LIKE LOWER(CONCAT('%', CAST(:condutor AS string), '%'))) AND " +
            "(:veiculo  IS NULL OR r.veiculo = :veiculo) AND " +
            "(:tipo     IS NULL OR r.tipoMovimentacao = :tipo) AND " +
-           "(:inicio   IS NULL OR r.dataHora >= :inicio) AND " +
-           "(:fim      IS NULL OR r.dataHora <= :fim) " +
+           "r.dataHora >= :inicio AND r.dataHora <= :fim " +
            "ORDER BY r.dataHora DESC")
     List<DiarioBordoRecord> filtrar(
             @Param("condutor") String condutor,

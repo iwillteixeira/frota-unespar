@@ -61,8 +61,9 @@ public class AdminController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim
     ) {
-        LocalDateTime dtInicio = inicio != null ? inicio.atStartOfDay() : null;
-        LocalDateTime dtFim    = fim    != null ? fim.atTime(23, 59, 59) : null;
+        // Datas sempre preenchidas para evitar inferência de tipo NULL no PostgreSQL
+        LocalDateTime dtInicio = inicio != null ? inicio.atStartOfDay()   : LocalDateTime.of(2000, 1, 1, 0, 0);
+        LocalDateTime dtFim    = fim    != null ? fim.atTime(23, 59, 59)  : LocalDateTime.of(2100, 1, 1, 0, 0);
         String condutorParam = (condutor != null && !condutor.isBlank()) ? condutor : null;
         String veiculoParam  = (veiculo  != null && !veiculo.isBlank())  ? veiculo  : null;
         String tipoParam     = (tipo     != null && !tipo.isBlank())     ? tipo     : null;
