@@ -44,13 +44,25 @@ html, body {
 
 /* ── Aviso faixa ── */
 .aviso-bar {
-  background: #f0c040;
-  color: #1a1a1a;
+  background: rgb(45, 122, 80);
+  color: #ffffff;
   font-size: .68rem;
   font-weight: 700;
   text-align: center;
   padding: 6px 12px;
   line-height: 1.5;
+}
+
+/* ── Logo instituição ── */
+.logo-instituicao {
+  display: flex;
+  justify-content: center;
+  padding: 20px 16px 8px;
+}
+.logo-instituicao img {
+  max-width: 220px;
+  width: 60%;
+  height: auto;
 }
 
 /* ── Sheet branca ── */
