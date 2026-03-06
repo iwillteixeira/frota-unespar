@@ -173,4 +173,10 @@ public class AdminController {
         configuracaoRepository.save(c);
         return ResponseEntity.ok(Map.of("ok", true, "email", email));
     }
+
+    @DeleteMapping("/config/notificacao")
+    public ResponseEntity<?> removeEmailNotificacao() {
+        configuracaoRepository.deleteById("email.notificacao");
+        return ResponseEntity.ok(Map.of("ok", true));
+    }
 }
