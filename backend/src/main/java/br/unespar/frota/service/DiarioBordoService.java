@@ -10,6 +10,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 @Service
@@ -26,7 +27,7 @@ public class DiarioBordoService {
     private String emailUsername;
 
     public void registrar(DiarioBordoDTO dto) {
-        LocalDateTime agora = LocalDateTime.now();
+        LocalDateTime agora = LocalDateTime.now(ZoneId.of("America/Sao_Paulo"));
 
         // Salva no banco
         DiarioBordoRecord record = new DiarioBordoRecord();
