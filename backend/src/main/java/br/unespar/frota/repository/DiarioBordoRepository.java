@@ -13,7 +13,7 @@ import java.util.List;
 public interface DiarioBordoRepository extends JpaRepository<DiarioBordoRecord, Long> {
 
     @Query("SELECT r FROM DiarioBordoRecord r WHERE " +
-           "(:condutor IS NULL OR LOWER(r.nomeCondutor) LIKE LOWER(CONCAT('%', :condutor, '%'))) AND " +
+           "(:condutor IS NULL OR LOWER(r.nomeCondutor) LIKE LOWER(CONCAT('%', CAST(:condutor AS string), '%'))) AND " +
            "(:veiculo  IS NULL OR r.veiculo = :veiculo) AND " +
            "(:tipo     IS NULL OR r.tipoMovimentacao = :tipo) AND " +
            "(:inicio   IS NULL OR r.dataHora >= :inicio) AND " +
