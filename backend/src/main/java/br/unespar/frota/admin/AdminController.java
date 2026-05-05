@@ -2,10 +2,12 @@ package br.unespar.frota.admin;
 
 import br.unespar.frota.entity.AdminUser;
 import br.unespar.frota.entity.Configuracao;
+import br.unespar.frota.entity.DiarioBordoFoto;
 import br.unespar.frota.entity.DiarioBordoRecord;
 import br.unespar.frota.entity.Veiculo;
 import br.unespar.frota.repository.AdminUserRepository;
 import br.unespar.frota.repository.ConfiguracaoRepository;
+import br.unespar.frota.repository.DiarioBordoFotoRepository;
 import br.unespar.frota.repository.DiarioBordoRepository;
 import br.unespar.frota.repository.VeiculoRepository;
 import br.unespar.frota.security.JwtService;
@@ -29,6 +31,7 @@ public class AdminController {
     private final MicrosoftTokenService microsoftTokenService;
     private final JwtService jwtService;
     private final DiarioBordoRepository repository;
+    private final DiarioBordoFotoRepository fotoRepository;
     private final VeiculoRepository veiculoRepository;
     private final AdminUserRepository adminUserRepository;
     private final ConfiguracaoRepository configuracaoRepository;
@@ -79,6 +82,18 @@ public class AdminController {
         String tipoParam     = (tipo     != null && !tipo.isBlank())     ? tipo     : null;
 
         return ResponseEntity.ok(repository.filtrar(condutorParam, veiculoParam, tipoParam, dtInicio, dtFim));
+    }
+
+    @GetMapping("/registros/{id}/fotos")
+    public ResponseEntity<?> getFotos(@PathVariable Long id) {
+        List<DiarioBordoFoto> fotos = fotoRepository.findByRegistroId(id);
+        List<Map<String, String>> response = fotos.stream().map(f -> Map.of(
+                "id", String.valueOf(f.getId()),
+                "nomeArquivo", f.getNomeArquivo(),
+                "tipoConteudo", f.getTipoConteudo(),
+                "dadosBase64", f.getDadosBase64()
+        )).toList();
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/veiculos")

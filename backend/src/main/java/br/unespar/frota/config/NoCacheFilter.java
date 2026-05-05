@@ -16,7 +16,7 @@ public class NoCacheFilter implements Filter {
         HttpServletRequest  request  = (HttpServletRequest)  req;
         HttpServletResponse response = (HttpServletResponse) res;
 
-        if (request.getRequestURI().startsWith("/api/admin")) {
+        if (request.getRequestURI().startsWith("/api/")) {
             response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
             response.setHeader("Pragma",         "no-cache");
             response.setHeader("Expires",        "0");

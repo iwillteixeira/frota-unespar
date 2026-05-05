@@ -181,6 +181,22 @@
       rows="4"></textarea>
   </div>
 
+  <p class="secao-titulo" style="display:none">Fotos</p>
+
+  <!-- 11. Fotos -->
+  <div class="campo" style="display:none">
+    <label class="campo-label">Fotos do veículo <span style="color:var(--label);font-size:.8rem">(opcional)</span></label>
+    <label class="foto-upload-label" for="fotos-input">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+        <polyline points="21 15 16 10 5 21"/>
+      </svg>
+      Selecionar fotos
+    </label>
+    <input type="file" id="fotos-input" accept="image/*" multiple style="display:none" onchange="onFotosSelecionadas(this)" />
+    <div id="fotos-preview" class="fotos-preview"></div>
+  </div>
+
 </div><!-- /sheet -->
 
 <!-- Botão fixo no rodapé -->

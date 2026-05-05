@@ -1,8 +1,10 @@
 package br.unespar.frota.service;
 
 import br.unespar.frota.dto.DiarioBordoDTO;
+import br.unespar.frota.entity.DiarioBordoFoto;
 import br.unespar.frota.entity.DiarioBordoRecord;
 import br.unespar.frota.repository.ConfiguracaoRepository;
+import br.unespar.frota.repository.DiarioBordoFotoRepository;
 import br.unespar.frota.repository.DiarioBordoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +22,7 @@ public class DiarioBordoService {
 
     private final JavaMailSender mailSender;
     private final DiarioBordoRepository repository;
+    private final DiarioBordoFotoRepository fotoRepository;
     private final ConfiguracaoRepository configuracaoRepository;
 
     @Value("${frota.email.destino}")
@@ -51,15 +54,33 @@ public class DiarioBordoService {
         record.setVolumeTanque(dto.getVolumeTanque());
         record.setObservacoes(dto.getObservacoes());
         record.setCienteInstrucoes(dto.getCienteInstrucoes());
-        repository.save(record);
+        DiarioBordoRecord saved = repository.save(record);
 
-        // Envia por e-mail
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(emailUsername);
-        message.setTo(resolverEmailDestino());
-        message.setSubject(buildSubject(dto));
-        message.setText(buildBody(dto, agora));
-        mailSender.send(message);
+        // Salva fotos
+        if (dto.getFotos() != null) {
+            for (DiarioBordoDTO.FotoDTO fotoDto : dto.getFotos()) {
+                if (fotoDto.getDadosBase64() == null || fotoDto.getDadosBase64().isBlank()) continue;
+                DiarioBordoFoto foto = new DiarioBordoFoto();
+                foto.setRegistro(saved);
+                foto.setNomeArquivo(fotoDto.getNomeArquivo() != null ? fotoDto.getNomeArquivo() : "foto");
+                foto.setTipoConteudo(fotoDto.getTipoConteudo() != null ? fotoDto.getTipoConteudo() : "image/jpeg");
+                foto.setDadosBase64(fotoDto.getDadosBase64());
+                fotoRepository.save(foto);
+            }
+        }
+
+        // Envia por e-mail (falha silenciosa para não afetar o registro)
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(emailUsername);
+            message.setTo(resolverEmailDestino());
+            message.setSubject(buildSubject(dto));
+            message.setText(buildBody(dto, agora));
+            mailSender.send(message);
+        } catch (Exception e) {
+            // Log do erro mas não propaga — o registro já foi salvo
+            System.err.println("[FROTA] Falha ao enviar e-mail: " + e.getMessage());
+        }
     }
 
     private String buildSubject(DiarioBordoDTO dto) {

@@ -94,6 +94,38 @@ function fecharModal() {
 
 
 
+// ── Fotos ─────────────────────────────────────────────────────
+const fotosState = []; // { nomeArquivo, tipoConteudo, dadosBase64 }
+
+function onFotosSelecionadas(input) {
+  const files = Array.from(input.files);
+  input.value = ''; // permite re-selecionar o mesmo arquivo
+  files.forEach(file => {
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const base64 = e.target.result.split(',')[1];
+      fotosState.push({ nomeArquivo: file.name, tipoConteudo: file.type, dadosBase64: base64 });
+      renderFotosPreview();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderFotosPreview() {
+  const container = document.getElementById('fotos-preview');
+  container.innerHTML = fotosState.map((f, i) => `
+    <div class="foto-thumb">
+      <img src="data:${f.tipoConteudo};base64,${f.dadosBase64}" alt="${f.nomeArquivo}" />
+      <button class="foto-thumb-rm" onclick="removerFoto(${i})" type="button">✕</button>
+    </div>`).join('');
+}
+
+function removerFoto(i) {
+  fotosState.splice(i, 1);
+  renderFotosPreview();
+}
+
 // ── Estado do formulário ──────────────────────────────────────
 const state = {
   cienteInstrucoes: null,
@@ -154,6 +186,7 @@ async function enviar() {
       : undefined,
     volumeTanque: document.getElementById('volumeTanque').value,
     observacoes: document.getElementById('observacoes').value.trim() || undefined,
+    fotos: fotosState.length > 0 ? fotosState.map(f => ({ ...f })) : undefined,
   };
 
   let enviado = false;
@@ -199,6 +232,8 @@ function limpar() {
   document.getElementById('volumeTanque').value = '';
   document.getElementById('observacoes').value = '';
   document.getElementById('campo-passageiros').classList.add('hidden');
+  fotosState.length = 0;
+  renderFotosPreview();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 

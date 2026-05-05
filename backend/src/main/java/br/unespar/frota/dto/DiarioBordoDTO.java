@@ -37,6 +37,15 @@ public class DiarioBordoDTO {
 
     private String observacoes;
 
+    private java.util.List<FotoDTO> fotos;
+
+    @lombok.Data
+    public static class FotoDTO {
+        private String nomeArquivo;
+        private String tipoConteudo;
+        private String dadosBase64;
+    }
+
     public enum TipoMovimentacao {
         RETIRADA, DEVOLUCAO
     }

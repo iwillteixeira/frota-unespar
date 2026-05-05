@@ -332,4 +332,63 @@ a.drawer-item { text-decoration: none; margin-top: 8px; }
 }
 
 
+/* ── Fotos upload ── */
+.foto-upload-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--input-bg);
+  border: 2px dashed #b0bac9;
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-size: .9rem;
+  color: var(--label);
+  cursor: pointer;
+  font-weight: 600;
+  width: 100%;
+  justify-content: center;
+  margin-bottom: 10px;
+  transition: border-color .2s, background .2s;
+}
+.foto-upload-label:hover {
+  border-color: var(--navy);
+  background: #e6eaf2;
+}
+.fotos-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+.foto-thumb {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+.foto-thumb img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--label);
+}
+.foto-thumb-rm {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #c0392b;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: .75rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
 .hidden { display: none !important; }

@@ -478,13 +478,47 @@ const REDIRECT_URI = window.location.origin + '/admin/callback';
 let appToken = localStorage.getItem('frota_admin_token');
 let userEmail = localStorage.getItem('frota_admin_email');
 
+function tokenExpirado(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+    return payload.exp && Date.now() / 1000 >= payload.exp;
+  } catch (_) { return true; }
+}
+
+function sessaoExpirada() {
+  localStorage.removeItem('frota_admin_token');
+  localStorage.removeItem('frota_admin_email');
+  appToken = null; userEmail = null;
+  document.getElementById('login-view').style.display = 'flex';
+  document.getElementById('dashboard-view').style.display = 'none';
+  document.getElementById('tabs-bar').style.display = 'none';
+  document.getElementById('navbar-right').innerHTML = `<a href="/" style="color:#fff;opacity:.7;font-size:.85rem;text-decoration:none;">← Voltar</a>`;
+  document.getElementById('login-error').textContent = '⏱ Sua sessão expirou. Faça login novamente.';
+}
+
+async function apiFetch(url, options = {}) {
+  if (appToken && tokenExpirado(appToken)) { sessaoExpirada(); return null; }
+  const resp = await fetch(url, {
+    ...options,
+    headers: { Authorization: 'Bearer ' + appToken, ...(options.headers || {}) }
+  });
+  if (resp.status === 401) { sessaoExpirada(); return null; }
+  return resp;
+}
+
 function init() {
   const params = new URLSearchParams(window.location.search);
   if (params.get('error')) {
     document.getElementById('login-error').textContent = decodeURIComponent(params.get('error'));
     window.history.replaceState({}, '', '/admin');
   }
-  if (appToken) mostrarDashboard();
+  if (appToken) {
+    if (tokenExpirado(appToken)) {
+      sessaoExpirada();
+    } else {
+      mostrarDashboard();
+    }
+  }
 }
 init();
 
@@ -557,7 +591,8 @@ function mudarAba(aba) {
 
 async function carregarVeiculos() {
   try {
-    const resp = await fetch('/api/admin/veiculos', { headers: { Authorization: 'Bearer ' + appToken } });
+    const resp = await apiFetch('/api/admin/veiculos');
+    if (!resp) return;
     const veiculos = await resp.json();
 
     // Atualiza select do filtro
@@ -609,11 +644,12 @@ async function adicionarVeiculo() {
   erro.style.display = 'none';
   if (!nome) { erro.textContent = 'Digite o nome do veículo.'; erro.style.display = 'block'; return; }
 
-  const resp = await fetch('/api/admin/veiculos', {
+  const resp = await apiFetch('/api/admin/veiculos', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + appToken },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ nome })
   });
+  if (!resp) return;
   const data = await resp.json();
   if (!resp.ok) { erro.textContent = data.erro || 'Erro ao adicionar.'; erro.style.display = 'block'; return; }
   input.value = '';
@@ -622,11 +658,8 @@ async function adicionarVeiculo() {
 
 async function removerVeiculo(id) {
   if (!confirm('Remover este veículo?')) return;
-  const resp = await fetch('/api/admin/veiculos/' + id, {
-    method: 'DELETE',
-    headers: { Authorization: 'Bearer ' + appToken }
-  });
-  if (resp.ok) carregarVeiculos();
+  const resp = await apiFetch('/api/admin/veiculos/' + id, { method: 'DELETE' });
+  if (resp && resp.ok) carregarVeiculos();
 }
 
 function iniciarEdicao(id) {
@@ -650,26 +683,25 @@ function cancelarEdicao(id) {
 async function salvarEdicao(id) {
   const nome = document.getElementById('veiculo-input-' + id).value.trim();
   if (!nome) return;
-  const resp = await fetch('/api/admin/veiculos/' + id, {
+  const resp = await apiFetch('/api/admin/veiculos/' + id, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + appToken },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ nome })
   });
+  if (!resp) return;
   if (resp.ok) { carregarVeiculos(); }
   else { const d = await resp.json(); alert(d.erro || 'Erro ao salvar.'); }
 }
 
 async function toggleManutencao(id) {
-  const resp = await fetch('/api/admin/veiculos/' + id + '/manutencao', {
-    method: 'PATCH',
-    headers: { Authorization: 'Bearer ' + appToken }
-  });
-  if (resp.ok) carregarVeiculos();
+  const resp = await apiFetch('/api/admin/veiculos/' + id + '/manutencao', { method: 'PATCH' });
+  if (resp && resp.ok) carregarVeiculos();
 }
 
 // ── Usuários Admin ──────────────────────────────────────────────────────────
 async function carregarAdmins() {
-  const resp = await fetch('/api/admin/usuarios', { headers: { Authorization: 'Bearer ' + appToken } });
+  const resp = await apiFetch('/api/admin/usuarios');
+  if (!resp) return;
   const lista = await resp.json();
   const el = document.getElementById('lista-admins');
   if (!lista.length) { el.innerHTML = '<p style="color:var(--muted);font-size:.9rem">Nenhum administrador adicional cadastrado.</p>'; return; }
@@ -686,11 +718,12 @@ async function adicionarAdmin() {
   const email = input.value.trim();
   erroEl.style.display = 'none';
   if (!email) return;
-  const resp = await fetch('/api/admin/usuarios', {
+  const resp = await apiFetch('/api/admin/usuarios', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + appToken },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email })
   });
+  if (!resp) return;
   const data = await resp.json();
   if (!resp.ok) { erroEl.textContent = data.erro || 'Erro ao adicionar'; erroEl.style.display = 'block'; return; }
   input.value = '';
@@ -699,16 +732,13 @@ async function adicionarAdmin() {
 
 async function removerAdmin(id) {
   if (!confirm('Remover este administrador?')) return;
-  const resp = await fetch('/api/admin/usuarios/' + id, {
-    method: 'DELETE',
-    headers: { Authorization: 'Bearer ' + appToken }
-  });
-  if (resp.ok) carregarAdmins();
+  const resp = await apiFetch('/api/admin/usuarios/' + id, { method: 'DELETE' });
+  if (resp && resp.ok) carregarAdmins();
 }
 
 async function carregarEmailNotificacao() {
-  const resp = await fetch('/api/admin/config/notificacao', { headers: { Authorization: 'Bearer ' + appToken } });
-  if (resp.ok) {
+  const resp = await apiFetch('/api/admin/config/notificacao');
+  if (resp && resp.ok) {
     const data = await resp.json();
     document.getElementById('email-notificacao').value = data.email || '';
   }
@@ -718,11 +748,12 @@ async function salvarEmailNotificacao() {
   const email = document.getElementById('email-notificacao').value.trim();
   const msg = document.getElementById('msg-notificacao');
   if (!email) return;
-  const resp = await fetch('/api/admin/config/notificacao', {
+  const resp = await apiFetch('/api/admin/config/notificacao', {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + appToken },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email })
   });
+  if (!resp) return;
   const data = await resp.json();
   msg.style.display = 'block';
   if (resp.ok) {
@@ -737,10 +768,8 @@ async function salvarEmailNotificacao() {
 
 async function removerEmailNotificacao() {
   if (!confirm('Remover o e-mail configurado? As notificações voltarão para o e-mail padrão do sistema.')) return;
-  const resp = await fetch('/api/admin/config/notificacao', {
-    method: 'DELETE',
-    headers: { Authorization: 'Bearer ' + appToken }
-  });
+  const resp = await apiFetch('/api/admin/config/notificacao', { method: 'DELETE' });
+  if (!resp) return;
   const msg = document.getElementById('msg-notificacao');
   msg.style.display = 'block';
   if (resp.ok) {
@@ -770,8 +799,8 @@ async function buscar() {
 
   document.getElementById('table-body').innerHTML = '<div class="loading">Carregando...</div>';
   try {
-    const resp = await fetch('/api/admin/registros?' + params, { headers: { Authorization: 'Bearer ' + appToken } });
-    if (resp.status === 401) { logout(); return; }
+    const resp = await apiFetch('/api/admin/registros?' + params);
+    if (!resp) return;
     const data = await resp.json();
     renderTabela(data);
   } catch (e) {
@@ -837,13 +866,14 @@ function renderPagina() {
       <td data-label="Tanque">${esc(r.volumeTanque)}</td>
       <td data-label="Passageiros">${r.temPassageiros ? (r.nomePassageiros ? esc(r.nomePassageiros) : 'Sim') : 'Não'}</td>
       <td data-label="Obs." style="max-width:200px;white-space:pre-wrap">${r.observacoes ? esc(r.observacoes) : '—'}</td>
+      <td data-label="Fotos" style="display:none"><button onclick="verFotos(${r.id})" style="background:var(--navy);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:.8rem;cursor:pointer;">📷 Ver</button></td>
     </tr>`).join('');
 
   document.getElementById('table-body').innerHTML = `
     <table>
       <thead><tr>
         <th>Data/Hora</th><th>Tipo</th><th>Condutor</th><th>Veículo</th>
-        <th>KM</th><th>Destino</th><th>Tanque</th><th>Passageiros</th><th>Obs.</th>
+        <th>KM</th><th>Destino</th><th>Tanque</th><th>Passageiros</th><th>Obs.</th><th style="display:none">Fotos</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
@@ -884,7 +914,48 @@ function esc(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+async function verFotos(registroId) {
+  const modal = document.getElementById('modal-fotos');
+  const body  = document.getElementById('modal-fotos-body');
+  body.innerHTML = '<p style="color:var(--muted);text-align:center">Carregando...</p>';
+  modal.style.display = 'flex';
+  try {
+    const resp = await apiFetch('/api/admin/registros/' + registroId + '/fotos');
+    if (!resp) return;
+    const fotos = await resp.json();
+    if (!fotos.length) {
+      body.innerHTML = '<p style="color:var(--muted);text-align:center">Nenhuma foto neste registro.</p>';
+      return;
+    }
+    body.innerHTML = fotos.map(f => `
+      <div style="text-align:center">
+        <img src="data:${f.tipoConteudo};base64,${f.dadosBase64}"
+             alt="${esc(f.nomeArquivo)}"
+             style="max-width:100%;max-height:360px;border-radius:8px;border:1px solid var(--border)" />
+        <div style="font-size:.78rem;color:var(--muted);margin-top:4px">${esc(f.nomeArquivo)}</div>
+      </div>`).join('');
+  } catch (_) {
+    body.innerHTML = '<p style="color:#c0392b;text-align:center">Erro ao carregar fotos.</p>';
+  }
+}
+
+function fecharModalFotos() {
+  document.getElementById('modal-fotos').style.display = 'none';
+}
+
 init();
 </script>
+
+<!-- Modal de fotos -->
+<div id="modal-fotos" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;align-items:center;justify-content:center;padding:16px" onclick="fecharModalFotos()">
+  <div style="background:#fff;border-radius:16px;padding:24px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto" onclick="event.stopPropagation()">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h3 style="font-size:1rem;color:var(--navy)">📷 Fotos do registro</h3>
+      <button onclick="fecharModalFotos()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted)">✕</button>
+    </div>
+    <div id="modal-fotos-body" style="display:flex;flex-direction:column;gap:16px"></div>
+  </div>
+</div>
+
 </body>
 </html>
